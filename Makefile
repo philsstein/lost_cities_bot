@@ -1,13 +1,17 @@
 BIN=lost_cities
+GAME_SRC=game.c game.h card_stack.h card_stack.c
 
-${BIN}: game.c game.h card_stack.h card_stack.c main.c
+${BIN}: main.c ${GAME_SRC}
 	gcc card_stack.c game.c main.c -o ${BIN}
 
-test: game.c game.h test.c card_stack.h card_stack.c
+test: test.c ${GAME_SRC}
 	gcc card_stack.c game.c test.c -o ${BIN}_test
 
-debug: game.c game.h test.c card_stack.h card_stack.c
+debug: test.c ${GAME_SRC}
 	gcc -g card_stack.c game.c test.c -o ${BIN}_debug
+
+tags: main.c test.c ${GAME_SRC}
+	ctags -R . 
 
 clean:
 	@rm -f *.o ${BIN} ${BIN}_test ${BIN}_debug

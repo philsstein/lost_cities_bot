@@ -6,8 +6,7 @@
 #include "game.h"
 #include "card_stack.h"
 
-int main(void) {
-    srandom(time(NULL)); 
+int stack_test(void) {
     /*** stack tests ***/
     const unsigned int card_stack_size = 3;
     card_stack_t card_stack; 
@@ -37,14 +36,12 @@ int main(void) {
         pop_stack(&card_stack); 
 
     deinit_stack(&card_stack); 
+    return 0;
+}
 
-    /***** game test ****/
+int add_player_test(void) {
     game_board_t board;
     init_game_board(&board); 
-    printf ("deck: "); 
-    for (int i = 0; i < 5; i++)
-        printf(" %s", card_to_string(&board.deck.cards[i]));  
-    printf(" ...\n"); 
     printf("sizeof(board): %lu\n", sizeof(board)); 
     printf("top of deck: %s\n", card_to_string(top_stack(&board.deck))); 
     const char *names[] = { "Geoff", "Erica" }; 
@@ -56,12 +53,81 @@ int main(void) {
         else
             printf("Added %s to the game.\n", names[i]);
     }
-    /* add a few card to player played stack */
-    for (int i = 0; i < 5; i++) {
-        card_t *c = pop_stack(&board.deck); 
-        push_stack(&board.players[0].played[c->color], c); 
-    }
+    assert(get_player(&board, names[0])); 
+    assert(get_player(&board, names[1])); 
+    assert(!get_player(&board, "johnsmith")); 
+
+    card_t nocard; 
+    memset(&nocard, 0, sizeof(nocard)); 
+    assert(memcmp(&board.players[0].hand[0], &nocard, sizeof(card_t))); 
+    assert(memcmp(&board.players[1].hand[4], &nocard, sizeof(card_t))); 
+
     show_board(&board);
+    deinit_game_board(&board); 
+    return 0;
+}
+
+int play_card_test(void) {
+    game_board_t board;
+    init_game_board(&board); 
+    add_player(&board, "Geoff"); 
+    add_player(&board, "Erica"); 
+
+    player_t *p = &board.players[0]; 
+    card_t cards[] = {
+        {.value=1, .color=BLUE},
+        {.value=3, .color=BLUE},
+        {.value=2, .color=BLUE}}; 
+    memcpy(p->hand, cards, sizeof(cards)); 
+    assert(play_card(&board, p->name, card_to_string(&cards[0]))); 
+    assert(draw_card(&board, p->name)); 
+    assert(play_card(&board, p->name, card_to_string(&cards[1]))); 
+    assert(draw_card(&board, p->name)); 
+    assert(!play_card(&board, p->name, card_to_string(&cards[2]))); 
+    /* no need to draw, we failed to play. */
+
+    assert(discard(&board, p->name, card_to_string(&p->hand[3])));
+    assert(draw_card(&board, p->name)); 
+    assert(discard(&board, p->name, card_to_string(&p->hand[3])));
+    assert(draw_card(&board, p->name)); 
+
+    for (int c = 0; c < HAND_SIZE; c++) 
+        assert(p->hand[c].value != 0); 
+
+    show_board(&board); 
+
+    deinit_game_board(&board); 
+    return 0;
+}
+
+int discard_test(void) {
+    game_board_t board;
+    init_game_board(&board); 
+    add_player(&board, "Rhen"); 
+    add_player(&board, "Shtimpy"); 
+
+    deinit_game_board(&board); 
+    return 0;
+}
+    
+int main(void) {
+    srandom(1); 
+   
+    struct {
+        int (*func)(void); 
+        const char *name;
+    } tests [] = { 
+        { .func = stack_test, .name = "stack test" }, 
+        { .func = add_player_test, .name = "add player test" }, 
+        { .func = play_card_test, .name = "play card test" },
+    }; 
+    for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+        printf("=======Running test: %s\n", tests[i].name); 
+        if ((*tests[i].func)()) 
+            fprintf(stderr, "Error in test: %s\n", tests[i].name); 
+        else
+            printf("OK\n"); 
+    }
 
     return EXIT_SUCCESS; 
 }
