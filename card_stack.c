@@ -50,7 +50,7 @@ const char *stack_to_string(const card_stack_t *stack) {
         const char *cardstr = card_to_string(&stack->cards[i]);
         if (count + strnlen(cardstr, sizeof(buffer)) >= sizeof(buffer))
             return NULL; 
-        count += snprintf(&buffer[count], sizeof(buffer), "%s ", cardstr); 
+        count += snprintf(&buffer[count], sizeof(buffer)-count, "%s ", cardstr); 
     }
     return (const char*)&buffer; 
 }
