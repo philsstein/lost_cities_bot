@@ -134,17 +134,14 @@ void show_board(const game_board_t *board) {
 
 int replace_player(game_board_t *board, const char *old_name, const char *new_name)
 {
-    for (int p = 0; p < NUM_PLAYERS; p++) {
-        if (board->players[p].name[0]) {
-            if (!strncmp(board->players[p].name, old_name, sizeof(board->players->name))) {
-                strncpy(board->players[p].name, new_name, sizeof(board->players->name)); 
-                snprintf(board->response, sizeof(board->response), 
-                        "Replaced in-game Lost Cities player %s with %s.", old_name, new_name); 
-                return 1;
-            }
-        }
-    }
-    return 0; 
+    player_t *player; 
+    if ((player = get_player(board, old_name)) == NULL)
+        return 0; 
+
+    strncpy(player->name, new_name, sizeof(player->name)); 
+    snprintf(board->response, sizeof(board->response), 
+            "Replaced in-game Lost Cities player %s with %s.", old_name, new_name); 
+    return 1;
 }
 
 int init_game_board(game_board_t *board) {
