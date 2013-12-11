@@ -10,7 +10,7 @@
 typedef struct {
     game_board_t game;
     char channel[MAX_CHAN_NAME_LEN];
-    char *nick; 
+    char *bot_nick; 
     game_board_t *next;
 } game_board_list_t;
 

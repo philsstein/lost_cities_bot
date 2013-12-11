@@ -5,7 +5,6 @@
 #include <stdlib.h>
 
 typedef enum { RED=0, WHITE, BLUE, YELLOW, GREEN } color_t; 
-static const char *color_map[] = { "R", "W", "B", "Y", "G" }; 
 
 typedef struct {
     short value;     /* 1 == investement, 0 == empty slot, else value */

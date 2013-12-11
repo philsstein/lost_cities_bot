@@ -40,23 +40,51 @@ player_t *get_player(game_board_t *board, const char *name) {
 }
 
 int add_player(game_board_t *board, const char *name) {
-    for (int i = 0; i < NUM_PLAYERS; i++) {
-        if (!board->players[i].name[0]) {
-            strncpy(board->players[i].name, name, sizeof(board->players[i].name));
-            for (int c = 0; c < HAND_SIZE; c++) 
-                memcpy(&board->players[i].hand[c], pop_stack(&board->deck), sizeof(card_t)); 
-            return 1;
+    int buf_used = 0;
+    if (board->players[0].name[0] && board->players[1].name[0]) {
+        buf_used += snprintf(board->response + buf_used, sizeof(board->response) - buf_used, 
+                "There are already enough players in the game.");
+        return buf_used;
+    }
+    else {
+        for (int i = 0; i < NUM_PLAYERS; i++) {
+            if (!board->players[i].name[0]) {
+                strncpy(board->players[i].name, name, sizeof(board->players[i].name));
+                for (int c = 0; c < HAND_SIZE; c++) 
+                    memcpy(&board->players[i].hand[c], pop_stack(&board->deck), sizeof(card_t)); 
+
+                buf_used = snprintf(board->response, sizeof(board->response), 
+                        "Added %s to the game. ", name); 
+                break;
+            }
+            else if (!strncmp(board->players[i].name, name, sizeof(board->players[i].name))) {
+                buf_used = snprintf(board->response, sizeof(board->response), 
+                        "%s is already in the game. ", name); 
+                return buf_used;
+            }
         }
     }
-    return 0; 
+    if (board->players[0].name[0] && board->players[1].name[0]) 
+        buf_used += snprintf(board->response + buf_used, sizeof(board->response) - buf_used, 
+                "There are enough players! The game has begun!");
+
+    return buf_used; 
 }
 
 int discard(game_board_t *board, const char *name, const char *cardstr) {
-    return from_hand_to_stack(board, name, cardstr, 1); 
+    int ret_val = from_hand_to_stack(board, name, cardstr, 1); 
+    if (ret_val) 
+        (void)snprintf(board->response, sizeof(board->response), 
+                "%s discarded %s.", name, cardstr);
+    return ret_val;
 }
 
 int play_card(game_board_t *board, const char *name, const char *cardstr) {
-    return from_hand_to_stack(board, name, cardstr, 0); 
+    int ret_val = from_hand_to_stack(board, name, cardstr, 0); 
+    if (ret_val) 
+        (void)snprintf(board->response, sizeof(board->response), 
+                "%s played %s.", name, cardstr);
+    return ret_val; 
 }
 
 int draw_card(game_board_t *board, const char *name) {
@@ -69,6 +97,8 @@ int draw_card(game_board_t *board, const char *name) {
             const card_t *card = pop_stack(&board->deck); 
             if (card) {
                 memcpy(&player->hand[i], card, sizeof(card_t)); 
+                snprintf(board->response, sizeof(board->response), 
+                        "%s drew card %s.", name, card_to_string(card)); 
                 return 1;
             }
             else
@@ -100,6 +130,21 @@ void show_board(const game_board_t *board) {
             printf("%s: %s", color_to_string(c), stack_to_string(&player->played[c])); 
         printf("]\n");
     }
+}
+
+int replace_player(game_board_t *board, const char *old_name, const char *new_name)
+{
+    for (int p = 0; p < NUM_PLAYERS; p++) {
+        if (board->players[p].name[0]) {
+            if (!strncmp(board->players[p].name, old_name, sizeof(board->players->name))) {
+                strncpy(board->players[p].name, new_name, sizeof(board->players->name)); 
+                snprintf(board->response, sizeof(board->response), 
+                        "Replaced in-game Lost Cities player %s with %s.", old_name, new_name); 
+                return 1;
+            }
+        }
+    }
+    return 0; 
 }
 
 int init_game_board(game_board_t *board) {

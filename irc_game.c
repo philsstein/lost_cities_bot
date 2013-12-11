@@ -45,23 +45,6 @@ void dump_event (irc_session_t * session, const char * event, const char * origi
 }
 
 /****************************************** 
- * handle commands from channel
- ******************************************/
-static int handle_quit(irc_session_t * session, const char * event, const char * origin,
-        const char ** params, unsigned int count)
-{
-    irc_cmd_quit (session, "Lost Cities bot getting lost...");
-    return 1;
-}
-
-static int handle_help(irc_session_t * session, const char * event, const char * origin,
-        const char ** params, unsigned int count)
-{
-    irc_cmd_msg(session, params[0], "there will be help here."); 
-    return 1;
-}
-
-/****************************************** 
  * handle IRC events
  ******************************************/
 void event_connect(irc_session_t * session, const char * event, const char * origin,
@@ -77,18 +60,32 @@ void event_join(irc_session_t * session, const char * event, const char * origin
         const char ** params, unsigned int count) 
 {
     dump_event(session, event, origin, params, count); 
-    irc_cmd_user_mode (session, "+i");
-    irc_cmd_msg (session, params[0], "Let's get this exploring party started!");
+    irc_cmd_user_mode(session, "+i");
+    if (origin && session) {
+        /* irc_cmd_user_mode(session, "+o"); */
+        char nickbuf[128]; 
+        irc_target_get_nick(origin, nickbuf, sizeof(nickbuf));
+        const char *bot_nick = ((game_board_list_t *)irc_get_ctx(session))->bot_nick;
+        if (!strncmp(nickbuf, bot_nick, sizeof(nickbuf))) 
+            irc_cmd_msg(session, params[0], "Let's get this exploring party started!"); 
+    }
 }
 void event_nick(irc_session_t * session, const char * event, const char * origin,
         const char ** params, unsigned int count)
 {
     dump_event(session, event, origin, params, count); 
-    /* GTL - check if a game player changed his/her nick and update the game if needed. */
+    if (origin && session) {
+        char nickbuf[128]; 
+        irc_target_get_nick(origin, nickbuf, sizeof(nickbuf));
+        game_board_t *game = &((game_board_list_t *)irc_get_ctx(session))->game; 
+        if (replace_player(game, nickbuf, params[0]))
+            irc_cmd_msg(session, params[0], game->response); 
+    }
 }
 
 void event_channel(irc_session_t * session, const char * event, const char * origin,
-        const char ** params, unsigned int count) {
+        const char ** params, unsigned int count) 
+{
     char nickbuf[128];
     dump_event(session, event, origin, params, count); 
 
@@ -102,21 +99,20 @@ void event_channel(irc_session_t * session, const char * event, const char * ori
         return;
 
     irc_target_get_nick(origin, nickbuf, sizeof(nickbuf));
+    game_board_list_t *ctx = (game_board_list_t *)irc_get_ctx(session);
+    game_board_t *game = &ctx->game;  /* GTL one game for now. */
+    const char *nick = (const char*)&nickbuf; 
+    const char *channel = (const char*)&ctx->channel; 
 
-    struct {
-        const char *cmd;
-        int (*action)(irc_session_t *, const char*, const char*, const char**, unsigned int); 
-    } cmd_map[] = { 
-        { "!quit", handle_quit }, 
-        { "!help", handle_help }
-    };
-
-    for (int i = 0; i < sizeof(cmd_map)/sizeof(cmd_map[0]); i++) {
-        if (!strcmp(params[1], cmd_map[i].cmd)) {
-            addlog("Executing action %s\n", cmd_map[i].cmd); 
-            if (!cmd_map[i].action(session, event, origin, params, count)) 
-                addlog("Error executing command.\n");
-        }
+    if (!strcmp(params[1], "!join")) {
+        addlog("Attempting to add %s to game in channel %s.", nick, channel); 
+        if (!add_player(game, nick)) 
+            addlog("Unable to add % to game.", nick); 
+        else
+            irc_cmd_msg(session, params[0], game->response); 
     }
+    else if (!strcmp(params[1], "!quit")) 
+        irc_cmd_quit (session, "Lost Cities bot getting lost...");
+    else if (!strcmp(params[1], "!help")) 
+        irc_cmd_msg(session, params[0], "there will be help here."); 
 }
-

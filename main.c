@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     ctx->next = NULL;   /* start with one game in one channel */
     init_game_board(&ctx->game); 
     strncpy(ctx->channel, argv[3], sizeof(ctx->channel)); 
-    ctx->nick = argv[2];
+    ctx->bot_nick = argv[2]; 
 
     irc_set_ctx(s, ctx);
 

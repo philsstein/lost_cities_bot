@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "card_stack.h"
 
+static const char *color_map[] = { "R", "W", "B", "Y", "G" }; 
+
 const char *color_to_string(const color_t color) {
     return color_map[color]; 
 }

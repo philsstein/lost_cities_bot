@@ -2,3 +2,6 @@
 irc_game.log
 tags
 *.swp
+*.o
+test
+lost_cities

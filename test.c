@@ -51,8 +51,12 @@ int add_player_test(void) {
             return 1; 
         }
         else
-            printf("Added %s to the game.\n", names[i]);
+            printf("%s\n", board.response); 
     }
+    /* adding same player a second time is not an error. */
+    assert(add_player(&board, names[0])); 
+    printf("%s\n", board.response); 
+
     assert(get_player(&board, names[0])); 
     assert(get_player(&board, names[1])); 
     assert(!get_player(&board, "johnsmith")); 
@@ -80,16 +84,24 @@ int play_card_test(void) {
         {.value=2, .color=BLUE}}; 
     memcpy(p->hand, cards, sizeof(cards)); 
     assert(play_card(&board, p->name, card_to_string(&cards[0]))); 
+    printf("%s\n", board.response); 
     assert(draw_card(&board, p->name)); 
+    printf("%s\n", board.response); 
     assert(play_card(&board, p->name, card_to_string(&cards[1]))); 
+    printf("%s\n", board.response); 
     assert(draw_card(&board, p->name)); 
+    printf("%s\n", board.response); 
     assert(!play_card(&board, p->name, card_to_string(&cards[2]))); 
     /* no need to draw, we failed to play. */
 
     assert(discard(&board, p->name, card_to_string(&p->hand[3])));
+    printf("%s\n", board.response); 
     assert(draw_card(&board, p->name)); 
+    printf("%s\n", board.response); 
     assert(discard(&board, p->name, card_to_string(&p->hand[3])));
+    printf("%s\n", board.response); 
     assert(draw_card(&board, p->name)); 
+    printf("%s\n", board.response); 
 
     for (int c = 0; c < HAND_SIZE; c++) 
         assert(p->hand[c].value != 0); 

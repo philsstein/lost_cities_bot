@@ -1,21 +1,28 @@
+CC=gcc
+CFLAGS=-Wall -g
+
 BIN=lost_cities
-GAME_SRC=game.c game.h card_stack.h card_stack.c irc_game.h irc_game.c
-CFILES=game.c card_stack.c irc_game.c
+OBJS=game.o card_stack.o irc_game.o
 LIB_IRC_PATH=../libircclient/libircclient-1.7
-LIB_IRC_INC=${LIB_IRC_PATH}/include
-LIB_IRC_LIB=-L ${LIB_IRC_PATH}/src -l ircclient
-DEBUG=-g
+INCLUDES=-I ${LIB_IRC_PATH}/include
+LIBS=-L ${LIB_IRC_PATH}/src -l ircclient
 
-${BIN}: main.c ${GAME_SRC}
-	gcc ${DEBUG} -I ${LIB_IRC_INC} ${CFILES} main.c -o ${BIN} ${LIB_IRC_LIB}
+${BIN}: main.o ${OBJS}
+	${CC} ${CFLAGS} ${INCLUDES} main.o ${OBJS} -o ${BIN} ${LIBS}
 
-test: test.c ${GAME_SRC}
-	gcc -g -i ${LIB_IRC_INC} ${CFILES} test.c -o ${BIN}_test ${LIB_IRC_LIB}
+test: test.o ${OBJS}
+	${CC} ${CFLAGS} ${INCLUDES} test.o ${OBJS} -o test ${LIBS}
+
+game.o: game.h game.c
+card_stack.o: card_stack.c card_stack.h
+irc_game.o: irc_game.c irc_game.h
 
 tags: main.c test.c ${GAME_SRC}
-	ctags -R . ${LIB_IRC_INC}
+	ctags -R . ${LIB_IRC_PATH}/include
 
 clean:
-	@rm -f *.o ${BIN} ${BIN}_test ${BIN}_debug
+	@rm -f *.o ${BIN} test debug
 	@rm -rf *.dSYM
 
+.c.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<

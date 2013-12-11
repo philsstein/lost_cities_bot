@@ -13,6 +13,8 @@
 
 #define MAX_COLOR_SIZE 7 /* "yellow" */
 
+#define MAX_RESP_SIZE 256
+
 typedef struct {
     char name[MAX_NAME_SIZE]; 
     card_t hand[HAND_SIZE]; 
@@ -24,12 +26,8 @@ typedef struct {
     unsigned short player_turn;
     card_stack_t deck;
     card_stack_t discard[NUM_COLORS]; 
+    char response[MAX_RESP_SIZE]; 
 } game_board_t;
-
-/* init / deinit structures */
-int init_game_board(game_board_t *board); 
-int deinit_game_board(game_board_t *board); 
-int load_config(const char *conf_file); 
 
 /* game commands */
 int add_player(game_board_t *, const char *name); 
@@ -37,6 +35,14 @@ int play_card(game_board_t *board, const char *name, const char *cardstr);
 int discard(game_board_t *board, const char *name, const char *cardstr); 
 player_t *get_player(game_board_t *board, const char *name); 
 int draw_card(game_board_t *board, const char *name); 
+
+/* Can be called anytime. Will only return non-zero if player is in game and is replaced. */
+int replace_player(game_board_t *board, const char *cur_name, const char *new_name); 
+
+/* init / deinit structures */
+int init_game_board(game_board_t *board); 
+int deinit_game_board(game_board_t *board); 
+int load_config(const char *conf_file); 
 
 /* debug / logging */
 void show_board(const game_board_t *board); 
