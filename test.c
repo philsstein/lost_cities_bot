@@ -83,25 +83,31 @@ int play_card_test(void) {
         {.value=3, .color=BLUE},
         {.value=2, .color=BLUE}}; 
     memcpy(p->hand, cards, sizeof(cards)); 
+
     assert(play_card(&board, p->name, card_to_string(&cards[0]))); 
     printf("%s\n", board.response); 
-    assert(draw_card(&board, p->name)); 
+    assert(draw_card(&board, p->name, DECK)); 
+    /* cheating here, making it the same player's turn. */
+    board.player_turn = 0;
     printf("%s\n", board.response); 
     assert(play_card(&board, p->name, card_to_string(&cards[1]))); 
     printf("%s\n", board.response); 
-    assert(draw_card(&board, p->name)); 
+    assert(draw_card(&board, p->name, DECK)); 
+    board.player_turn = 0;
     printf("%s\n", board.response); 
     assert(!play_card(&board, p->name, card_to_string(&cards[2]))); 
     /* no need to draw, we failed to play. */
 
     assert(discard(&board, p->name, card_to_string(&p->hand[3])));
     printf("%s\n", board.response); 
-    assert(draw_card(&board, p->name)); 
+    assert(draw_card(&board, p->name, DECK)); 
+    board.player_turn = 0;
     printf("%s\n", board.response); 
     assert(discard(&board, p->name, card_to_string(&p->hand[3])));
     printf("%s\n", board.response); 
-    assert(draw_card(&board, p->name)); 
+    assert(draw_card(&board, p->name, DECK)); 
     printf("%s\n", board.response); 
+    board.player_turn = 0;
 
     for (int c = 0; c < HAND_SIZE; c++) 
         assert(p->hand[c].value != 0); 

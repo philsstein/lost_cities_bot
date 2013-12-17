@@ -1,11 +1,10 @@
 CC=gcc
-CFLAGS=-Wall -g
+CFLAGS=-Wall -g -std=c99 -D_XOPEN_SOURCE=700
 
 BIN=lost_cities
 OBJS=game.o card_stack.o irc_game.o
-LIB_IRC_PATH=../libircclient/libircclient-1.7
-INCLUDES=-I ${LIB_IRC_PATH}/include
-LIBS=-L ${LIB_IRC_PATH}/src -l ircclient
+INCLUDES=-I /usr/include -I ../libircclient-1.7/include
+LIBS=../libircclient-1.7/src/libircclient.a
 
 ${BIN}: main.o ${OBJS}
 	${CC} ${CFLAGS} ${INCLUDES} main.o ${OBJS} -o ${BIN} ${LIBS}
@@ -22,7 +21,7 @@ tags: main.c test.c ${GAME_SRC}
 
 clean:
 	@rm -f *.o ${BIN} test debug
-	@rm -rf *.dSYM
+	@rm -rf *.dSYM core*
 
 .c.o:
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<

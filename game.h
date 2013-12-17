@@ -5,15 +5,15 @@
 
 #define MAX_NAME_SIZE 32
 #define NUM_PLAYERS 2
-
 #define HAND_SIZE 5
 #define NUM_COLORS 5
 #define MAX_PLAYED_CARDS 12
 #define DECK_SIZE (NUM_COLORS * MAX_PLAYED_CARDS)
-
 #define MAX_COLOR_SIZE 7 /* "yellow" */
-
 #define MAX_RESP_SIZE 256
+
+/* Keep track of valid plays. */
+enum { PLAY = 1, DISCARD = 2, DRAW = 4 };
 
 typedef struct {
     char name[MAX_NAME_SIZE]; 
@@ -26,6 +26,7 @@ typedef struct {
     unsigned short player_turn;
     card_stack_t deck;
     card_stack_t discard[NUM_COLORS]; 
+    char valid_actions; 
     char response[MAX_RESP_SIZE]; 
 } game_board_t;
 
@@ -34,7 +35,11 @@ int add_player(game_board_t *, const char *name);
 int play_card(game_board_t *board, const char *name, const char *cardstr); 
 int discard(game_board_t *board, const char *name, const char *cardstr); 
 player_t *get_player(game_board_t *board, const char *name); 
-int draw_card(game_board_t *board, const char *name); 
+int get_player_hand(game_board_t *board, const char *name); 
+int get_game_table(game_board_t *board); 
+
+typedef enum { DECK, RED_PILE, WHITE_PILE, BLUE_PILE, YELLOW_PILE, GREEN_PILE } draw_pile_t; 
+int draw_card(game_board_t *board, const char *name, const draw_pile_t); 
 
 /* Can be called anytime. Will only return non-zero if player is in game and is replaced. */
 int replace_player(game_board_t *board, const char *cur_name, const char *new_name); 

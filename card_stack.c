@@ -77,6 +77,8 @@ card_t *pop_stack(card_stack_t *stack) {
 }
 
 card_t *top_stack(const card_stack_t *stack) {
+    if (stack->index == 0)
+        return NULL;
     return stack->cards + stack->index-1; 
 }
 

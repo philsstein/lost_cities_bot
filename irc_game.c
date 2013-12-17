@@ -89,13 +89,7 @@ void event_channel(irc_session_t * session, const char * event, const char * ori
     char nickbuf[128];
     dump_event(session, event, origin, params, count); 
 
-    if (count != 2)
-        return;
-
-    if (!origin)
-        return;
-
-    if (!params[1] == '!') 
+    if (count != 2 || !origin || !params[1] == '!')
         return;
 
     irc_target_get_nick(origin, nickbuf, sizeof(nickbuf));
@@ -111,8 +105,42 @@ void event_channel(irc_session_t * session, const char * event, const char * ori
         else
             irc_cmd_msg(session, params[0], game->response); 
     }
-    else if (!strcmp(params[1], "!quit")) 
-        irc_cmd_quit (session, "Lost Cities bot getting lost...");
+    else if (!strcmp(params[1], "!xyzzy")) 
+        irc_cmd_msg(session, nick, "Nothing happens."); 
+    else if (!strcmp(params[1], "!get lost")) 
+        irc_cmd_quit(session, "Lost Cities bot getting lost...");
     else if (!strcmp(params[1], "!help")) 
-        irc_cmd_msg(session, params[0], "there will be help here."); 
+        irc_cmd_msg(session, nick, "there will be help here."); 
+    else if (!strncmp(params[1], "!play", sizeof("!play")-1)) {
+        const char *card = strchr(params[1], ' '); 
+        if (!card)
+            irc_cmd_msg(session, params[0], "You must choose a card to play."); 
+        else if (!play_card(game, nick, card+1)) 
+            irc_cmd_msg(session, params[0], "Error playing card."); 
+        else 
+            irc_cmd_msg(session, params[0], game->response); 
+    }
+    else if (!strncmp(params[1], "!discard", sizeof("!discard"-1))) {
+        const char *card = strchr(params[1], ' '); 
+        if (!card)
+            irc_cmd_msg(session, params[0], "You must choose a card to discard."); 
+        else if (!discard(game, nick, card+1))
+            irc_cmd_msg(session, params[0], "Error discarding card.");
+        else
+            irc_cmd_msg(session, params[0], game->response); 
+    }
+    else if (!strcmp(params[1], "!hand")) {
+        if (!get_player_hand(game, nick)) 
+            irc_cmd_msg(session, params[0], "Unable to get retrieve your hand.");
+        else
+            irc_cmd_msg(session, nick, game->response); 
+    }
+    else if (!strcmp(params[1], "!table")) {
+        if (!get_game_table(game)) 
+            irc_cmd_msg(session, params[0], "Error getting game table."); 
+        else
+            irc_cmd_msg(session, params[0], game->response); 
+    }
+    else
+        irc_cmd_msg(session, params[0], "I don't know that command. I'm not a smart bot."); 
 }

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -11,10 +12,13 @@ static int from_hand_to_stack(game_board_t *board, const char *name, const char 
         return 0; 
     
     const card_t *card = string_to_card(cardstr);  
+    if (!card)
+        return 0; 
     for (int i = 0; i < HAND_SIZE; i++) {
         if (card->value == player->hand[i].value && card->color == player->hand[i].color) {
             if (!discard) {   /* play the card */
-                if (card->value > top_stack(&player->played[card->color])->value) {
+                const card_t *top_card = top_stack(&player->played[card->color]); 
+                if (!top_card || card->value > top_card->value) {
                     push_stack(&player->played[card->color], card);
                     memset(&player->hand[i], 0, sizeof(card_t)); 
                     return 1;
@@ -37,6 +41,42 @@ player_t *get_player(game_board_t *board, const char *name) {
         }
     }
     return NULL; 
+}
+
+int get_player_hand(game_board_t *board, const char *name) 
+{
+    player_t *p; 
+    if ((p = get_player(board, name)) == NULL) {
+        snprintf(board->response, sizeof(board->response), "%s", 
+                "You are not in the game."); 
+        return 0; 
+    }
+
+    int i = 0; 
+    for (int c = 0; c < HAND_SIZE; c++)
+        i += snprintf(board->response + i, sizeof(board->response) - i, 
+                "%s ", card_to_string(&p->hand[c])); 
+    return 1;
+}
+
+int get_game_table(game_board_t *board) {
+    int buf_i = 0; 
+    buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, "Discards: ["); 
+    for (int c = 0; c < NUM_COLORS; c++) 
+        buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, 
+                "%s: %s", color_to_string(c), stack_to_string(&board->discard[c])); 
+    buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, "] "); 
+
+    for (int p = 0; p < NUM_PLAYERS; p++) {
+        const player_t *player = &board->players[p];
+        buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, 
+                " %s played [", player->name); 
+        for (int c = 0; c < NUM_COLORS; c++) 
+            buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, 
+                    "%s: %s", color_to_string(c), stack_to_string(&player->played[c])); 
+        buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, "]");
+    }
+    return 1; 
 }
 
 int add_player(game_board_t *board, const char *name) {
@@ -66,39 +106,74 @@ int add_player(game_board_t *board, const char *name) {
     }
     if (board->players[0].name[0] && board->players[1].name[0]) 
         buf_used += snprintf(board->response + buf_used, sizeof(board->response) - buf_used, 
-                "There are enough players! The game has begun!");
+                "There are enough players! The game is started and %s goes first.", 
+                board->players[board->player_turn].name); 
 
     return buf_used; 
 }
 
+static int turn_check(game_board_t *board, const char *name) {
+    player_t *p = get_player(board, name); 
+    if (!p) 
+        return 0; 
+    if (strncmp(board->players[board->player_turn].name, p->name, MAX_NAME_SIZE)) {
+        snprintf(board->response, sizeof(board->response), "%s", "It is not your turn."); 
+        return 0;
+    }
+    return 1;
+}
+
 int discard(game_board_t *board, const char *name, const char *cardstr) {
+    if (DISCARD & board->valid_actions && !turn_check(board, name)) 
+        return 0; 
     int ret_val = from_hand_to_stack(board, name, cardstr, 1); 
-    if (ret_val) 
+    if (!ret_val) 
+        (void)snprintf(board->response, sizeof(board->response), 
+                "Error discaring %s.", cardstr);
+    else if (ret_val) {
         (void)snprintf(board->response, sizeof(board->response), 
                 "%s discarded %s.", name, cardstr);
+        board->valid_actions = DRAW; 
+    }
     return ret_val;
 }
 
 int play_card(game_board_t *board, const char *name, const char *cardstr) {
+    if (PLAY & board->valid_actions && !turn_check(board, name)) 
+        return 0; 
     int ret_val = from_hand_to_stack(board, name, cardstr, 0); 
-    if (ret_val) 
+    if (!ret_val) 
+        (void)snprintf(board->response, sizeof(board->response), 
+                "Error playing %s.", cardstr);
+    else if (ret_val) {
         (void)snprintf(board->response, sizeof(board->response), 
                 "%s played %s.", name, cardstr);
+        board->valid_actions = DRAW; 
+    }
     return ret_val; 
 }
 
-int draw_card(game_board_t *board, const char *name) {
-    player_t *player; 
-    if ((player = get_player(board, name)) == NULL)
+int draw_card(game_board_t *board, const char *name, const draw_pile_t pile) {
+    if (DRAW & board->valid_actions && !turn_check(board, name)) 
         return 0; 
-
+    player_t *player = get_player(board, name); 
     for (int i = 0; i < HAND_SIZE; i++) 
         if (player->hand[i].value == 0) {
-            const card_t *card = pop_stack(&board->deck); 
+            card_stack_t *stack; 
+            switch (pile) {
+                case DECK: stack = &board->deck; break;
+                case RED_PILE: stack = &player->played[RED]; break;
+                case WHITE_PILE: stack = &player->played[WHITE]; break;
+                case YELLOW_PILE: stack = &player->played[YELLOW]; break;
+                case BLUE_PILE: stack = &player->played[BLUE]; break;
+                case GREEN_PILE: stack = &player->played[GREEN]; break;
+            }
+            const card_t *card = pop_stack(stack); 
             if (card) {
                 memcpy(&player->hand[i], card, sizeof(card_t)); 
                 snprintf(board->response, sizeof(board->response), 
                         "%s drew card %s.", name, card_to_string(card)); 
+                board->valid_actions = PLAY & DISCARD; 
                 return 1;
             }
             else
@@ -147,6 +222,7 @@ int replace_player(game_board_t *board, const char *old_name, const char *new_na
 int init_game_board(game_board_t *board) {
     memset(board, 0, sizeof(*board)); 
     board->player_turn = random() % 2; 
+    board->valid_actions = PLAY & DISCARD; 
     init_stack(&board->deck, DECK_SIZE); 
     for (int p = 0; p < NUM_PLAYERS; p++) {
         for (int c = 0; c < NUM_COLORS; c++) {
