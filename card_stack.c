@@ -1,19 +1,39 @@
 #include <string.h>  /* memcpy */ 
 #include <stdio.h>
+#include <libircclient.h>
 #include "card_stack.h"
 
 static const char *color_map[] = { "R", "W", "B", "Y", "G" }; 
+
+static const char* color_to_markup(const color_t c)
+{
+    switch (c) {
+        case RED: return "RED"; break;
+        case WHITE: return "WHITE"; break;
+        case BLUE: return "BLUE"; break;
+        case YELLOW: return "YELLOW"; break;
+        case GREEN: return "GREEN"; break;
+        default: return ""; break;
+    }
+}
 
 const char *color_to_string(const color_t color) {
     return color_map[color]; 
 }
 
-const char*card_to_string(const card_t *card) {
-    static char buffer[16];
+const char*card_to_markup_string(const card_t *card) {
+    static char buffer[32];
     if (card->value != 1)
-        snprintf(buffer, sizeof(buffer), "%s%d", color_to_string(card->color), card->value); 
+        snprintf(buffer, sizeof(buffer), "[COLOR=%s]%s%d[/COLOR]", 
+                color_to_markup(card->color), color_to_string(card->color), card->value); 
     else
-        snprintf(buffer, sizeof(buffer), "%s*", color_to_string(card->color)); 
+        snprintf(buffer, sizeof(buffer), "[COLOR=%s]%s*[/COLOR]", 
+                color_to_markup(card->color), color_to_string(card->color)); 
+
+    /* there is a better way to do this... */
+    char *colored = irc_color_convert_to_mirc(buffer); 
+    snprintf(buffer, sizeof(buffer), "%s", colored); 
+    free(colored);  
 
     return buffer;
 }
@@ -30,7 +50,6 @@ const card_t *string_to_card(const char *str) {
     }
     switch (str[1]) {
         case '*': card.value = 1; break;
-        case '1': card.value = 10; break;
         case '2': card.value = 2; break;
         case '3': card.value = 3; break;
         case '4': card.value = 4; break;
@@ -39,6 +58,7 @@ const card_t *string_to_card(const char *str) {
         case '7': card.value = 7; break;
         case '8': card.value = 8; break;
         case '9': card.value = 9; break;
+        case '1': card.value = 10; break;
         default: return NULL;
     }
     return &card;
@@ -49,7 +69,7 @@ const char *stack_to_string(const card_stack_t *stack) {
     buffer[0] = 0;
     int count = 0;
     for (int i = 0; i < stack->index; i++) {
-        const char *cardstr = card_to_string(&stack->cards[i]);
+        const char *cardstr = card_to_markup_string(&stack->cards[i]);
         if (count + strnlen(cardstr, sizeof(buffer)) >= sizeof(buffer))
             return NULL; 
         count += snprintf(&buffer[count], sizeof(buffer)-count, "%s ", cardstr); 
@@ -86,5 +106,10 @@ void deinit_stack(card_stack_t *stack) {
     free(stack->cards);
     stack->max_size = 0;
     stack->index = 0; 
+}
+
+unsigned int num_cards(const card_stack_t *stack) 
+{
+    return stack->index; 
 }
 

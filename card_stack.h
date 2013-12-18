@@ -27,7 +27,7 @@ typedef struct {
 } card_stack_t; 
 
 /* convert cards to strings and vise versa. */
-const char *card_to_string(const card_t *);  /* returns pointer to static buffer */
+const char *card_to_markup_string(const card_t *);  /* returns pointer to static buffer */
 const card_t *string_to_card(const char *);  /* returns pointer to static buffer */
 const char *color_to_string(const color_t color); 
 const char *stack_to_string(const card_stack_t *); 
@@ -57,5 +57,9 @@ card_t *pop_stack(card_stack_t *);
  * pop it. 
  */
 card_t *top_stack(const card_stack_t *); 
+/*
+ * Return how many cards are in the stack.
+ */
+unsigned int num_cards(const card_stack_t *); 
 
 #endif 

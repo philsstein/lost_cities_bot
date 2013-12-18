@@ -36,10 +36,13 @@ int play_card(game_board_t *board, const char *name, const char *cardstr);
 int discard(game_board_t *board, const char *name, const char *cardstr); 
 player_t *get_player(game_board_t *board, const char *name); 
 int get_player_hand(game_board_t *board, const char *name); 
-int get_game_table(game_board_t *board); 
+int get_played_cards(game_board_t *board, const unsigned short player_num); 
+int get_discards(game_board_t *board); 
 
 typedef enum { DECK, RED_PILE, WHITE_PILE, BLUE_PILE, YELLOW_PILE, GREEN_PILE } draw_pile_t; 
 int draw_card(game_board_t *board, const char *name, const draw_pile_t); 
+
+int is_game_active(const game_board_t *board); 
 
 /* Can be called anytime. Will only return non-zero if player is in game and is replaced. */
 int replace_player(game_board_t *board, const char *cur_name, const char *new_name); 

@@ -3,8 +3,9 @@ CFLAGS=-Wall -g -std=c99 -D_XOPEN_SOURCE=700
 
 BIN=lost_cities
 OBJS=game.o card_stack.o irc_game.o
-INCLUDES=-I /usr/include -I ../libircclient-1.7/include
-LIBS=../libircclient-1.7/src/libircclient.a
+LIB_IRC_PATH=../libircclient-1.7
+INCLUDES=-I /usr/include -I ${LIB_IRC_PATH}/include
+LIBS=${LIB_IRC_PATH}/src/libircclient.a
 
 ${BIN}: main.o ${OBJS}
 	${CC} ${CFLAGS} ${INCLUDES} main.o ${OBJS} -o ${BIN} ${LIBS}

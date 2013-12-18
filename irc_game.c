@@ -74,6 +74,7 @@ void event_nick(irc_session_t * session, const char * event, const char * origin
         const char ** params, unsigned int count)
 {
     dump_event(session, event, origin, params, count); 
+
     if (origin && session) {
         char nickbuf[128]; 
         irc_target_get_nick(origin, nickbuf, sizeof(nickbuf));
@@ -81,6 +82,38 @@ void event_nick(irc_session_t * session, const char * event, const char * origin
         if (replace_player(game, nickbuf, params[0]))
             irc_cmd_msg(session, params[0], game->response); 
     }
+}
+
+static int show_table(game_board_t *board, irc_session_t * session, const char *whence)
+{
+    if (!is_game_active(board)) {
+        irc_cmd_msg(session, whence, "The game has not yet started."); 
+        return 1; 
+    }
+
+    for (int i = 0; i < 2; i++) {
+        if (!get_played_cards(board, i)) {
+            irc_cmd_msg(session, whence, "Error getting hand for player."); 
+            return 0; 
+        }
+        else
+            irc_cmd_msg(session, whence, board->response); 
+    }
+    if (!get_discards(board)) {
+        irc_cmd_msg(session, whence, "Error getting discard pile."); 
+        return 0; 
+    }
+    else
+        irc_cmd_msg(session, whence, board->response); 
+   
+    char buf[64]; 
+    snprintf(buf, sizeof(buf), "Cards remaining in draw deck: %d.", num_cards(&board->deck)); 
+    irc_cmd_msg(session, whence, buf); 
+
+    snprintf(buf, sizeof(buf), "It is %s's turn.", board->players[board->player_turn].name); 
+    irc_cmd_msg(session, whence, buf); 
+
+    return 1; 
 }
 
 void event_channel(irc_session_t * session, const char * event, const char * origin,
@@ -104,13 +137,18 @@ void event_channel(irc_session_t * session, const char * event, const char * ori
             addlog("Unable to add % to game.", nick); 
         else
             irc_cmd_msg(session, params[0], game->response); 
+
+        if (game->players[0].name[0] && game->players[1].name[0])
+            show_table(game, session, params[0]); 
     }
     else if (!strcmp(params[1], "!xyzzy")) 
         irc_cmd_msg(session, nick, "Nothing happens."); 
     else if (!strcmp(params[1], "!get lost")) 
         irc_cmd_quit(session, "Lost Cities bot getting lost...");
     else if (!strcmp(params[1], "!help")) 
-        irc_cmd_msg(session, nick, "there will be help here."); 
+        irc_cmd_msg(session, nick, 
+                "Valid commands: !join !table !play !discard !draw !hand. Each turn muyst be "
+                "play [card] then !draw [color]"); 
     else if (!strncmp(params[1], "!play", sizeof("!play")-1)) {
         const char *card = strchr(params[1], ' '); 
         if (!card)
@@ -136,10 +174,33 @@ void event_channel(irc_session_t * session, const char * event, const char * ori
             irc_cmd_msg(session, nick, game->response); 
     }
     else if (!strcmp(params[1], "!table")) {
-        if (!get_game_table(game)) 
-            irc_cmd_msg(session, params[0], "Error getting game table."); 
+        show_table(game, session, params[0]); 
+    }
+    else if (!strncmp(params[1], "!draw", sizeof("!draw")-1)) {
+        /* This string parsing may be better done inside game.c. */
+        int draw_ret = 0; 
+        if (params[1][5] == '\0') 
+            draw_ret = draw_card(game, nick, DECK); 
+        else 
+            switch (params[1][5]) {
+                case 'R':
+                case 'r': draw_ret = draw_card(game, nick, RED_PILE); break;
+                case 'B':
+                case 'b': draw_ret = draw_card(game, nick, BLUE_PILE); break;
+                case 'W':
+                case 'w': draw_ret = draw_card(game, nick, WHITE_PILE); break;
+                case 'G':
+                case 'g': draw_ret = draw_card(game, nick, GREEN_PILE); break;
+                case 'Y':
+                case 'y': draw_ret = draw_card(game, nick, YELLOW_PILE); break;
+                default: 
+                          draw_ret = 0;
+            }
+
+        if (!draw_ret)
+            irc_cmd_msg(session, params[0], "Unable to draw from that deck."); 
         else
-            irc_cmd_msg(session, params[0], game->response); 
+            irc_cmd_msg(session, nick, game->response); 
     }
     else
         irc_cmd_msg(session, params[0], "I don't know that command. I'm not a smart bot."); 

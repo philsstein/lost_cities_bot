@@ -55,27 +55,31 @@ int get_player_hand(game_board_t *board, const char *name)
     int i = 0; 
     for (int c = 0; c < HAND_SIZE; c++)
         i += snprintf(board->response + i, sizeof(board->response) - i, 
-                "%s ", card_to_string(&p->hand[c])); 
+                "%s ", card_to_markup_string(&p->hand[c])); 
     return 1;
 }
 
-int get_game_table(game_board_t *board) {
+int get_played_cards(game_board_t *board, const unsigned short player_num)
+{
+    player_t *p = &board->players[player_num]; 
+    unsigned int buf_i = 0; 
+    buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, 
+            "%s has played [", p->name); 
+    for (int c = 0; c < NUM_COLORS; c++) 
+        buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, 
+                "%s: %s", color_to_string(c), stack_to_string(&p->played[c])); 
+    buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, "]");
+    return 1; 
+}
+
+int get_discards(game_board_t *board) 
+{
     int buf_i = 0; 
     buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, "Discards: ["); 
     for (int c = 0; c < NUM_COLORS; c++) 
         buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, 
                 "%s: %s", color_to_string(c), stack_to_string(&board->discard[c])); 
-    buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, "] "); 
-
-    for (int p = 0; p < NUM_PLAYERS; p++) {
-        const player_t *player = &board->players[p];
-        buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, 
-                " %s played [", player->name); 
-        for (int c = 0; c < NUM_COLORS; c++) 
-            buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, 
-                    "%s: %s", color_to_string(c), stack_to_string(&player->played[c])); 
-        buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, "]");
-    }
+    buf_i += snprintf(board->response + buf_i, sizeof(board->response) - buf_i, "]"); 
     return 1; 
 }
 
@@ -124,7 +128,7 @@ static int turn_check(game_board_t *board, const char *name) {
 }
 
 int discard(game_board_t *board, const char *name, const char *cardstr) {
-    if (DISCARD & board->valid_actions && !turn_check(board, name)) 
+    if (!(DISCARD & board->valid_actions) || !turn_check(board, name)) 
         return 0; 
     int ret_val = from_hand_to_stack(board, name, cardstr, 1); 
     if (!ret_val) 
@@ -139,7 +143,7 @@ int discard(game_board_t *board, const char *name, const char *cardstr) {
 }
 
 int play_card(game_board_t *board, const char *name, const char *cardstr) {
-    if (PLAY & board->valid_actions && !turn_check(board, name)) 
+    if (!(PLAY & board->valid_actions) || !turn_check(board, name)) 
         return 0; 
     int ret_val = from_hand_to_stack(board, name, cardstr, 0); 
     if (!ret_val) 
@@ -147,14 +151,14 @@ int play_card(game_board_t *board, const char *name, const char *cardstr) {
                 "Error playing %s.", cardstr);
     else if (ret_val) {
         (void)snprintf(board->response, sizeof(board->response), 
-                "%s played %s.", name, cardstr);
+                "%s played %s.", name, card_to_markup_string(string_to_card(cardstr))); 
         board->valid_actions = DRAW; 
     }
     return ret_val; 
 }
 
 int draw_card(game_board_t *board, const char *name, const draw_pile_t pile) {
-    if (DRAW & board->valid_actions && !turn_check(board, name)) 
+    if (!(DRAW & board->valid_actions) || !turn_check(board, name)) 
         return 0; 
     player_t *player = get_player(board, name); 
     for (int i = 0; i < HAND_SIZE; i++) 
@@ -162,18 +166,19 @@ int draw_card(game_board_t *board, const char *name, const draw_pile_t pile) {
             card_stack_t *stack; 
             switch (pile) {
                 case DECK: stack = &board->deck; break;
-                case RED_PILE: stack = &player->played[RED]; break;
-                case WHITE_PILE: stack = &player->played[WHITE]; break;
-                case YELLOW_PILE: stack = &player->played[YELLOW]; break;
-                case BLUE_PILE: stack = &player->played[BLUE]; break;
-                case GREEN_PILE: stack = &player->played[GREEN]; break;
+                case RED_PILE: stack = &board->discard[RED]; break;
+                case WHITE_PILE: stack = &board->discard[WHITE]; break;
+                case YELLOW_PILE: stack = &board->discard[YELLOW]; break;
+                case BLUE_PILE: stack = &board->discard[BLUE]; break;
+                case GREEN_PILE: stack = &board->discard[GREEN]; break;
             }
             const card_t *card = pop_stack(stack); 
             if (card) {
                 memcpy(&player->hand[i], card, sizeof(card_t)); 
                 snprintf(board->response, sizeof(board->response), 
-                        "%s drew card %s.", name, card_to_string(card)); 
-                board->valid_actions = PLAY & DISCARD; 
+                        "%s drew card %s.", name, card_to_markup_string(card)); 
+                board->valid_actions = PLAY | DISCARD; 
+                board->player_turn = board->player_turn ? 0 : 1;
                 return 1;
             }
             else
@@ -181,6 +186,11 @@ int draw_card(game_board_t *board, const char *name, const draw_pile_t pile) {
         }
     
     return 0; 
+}
+
+int is_game_active(const game_board_t *board)
+{
+    return board->players[1].name[0]; 
 }
 
 int load_config(const char *conf_file) {
@@ -199,7 +209,7 @@ void show_board(const game_board_t *board) {
         const player_t *player = &board->players[p];
         printf("Player: %s Hand: ", player->name); 
         for (int c = 0; c < HAND_SIZE; c++)
-            printf("%s ", card_to_string(&player->hand[c]));
+            printf("%s ", card_to_markup_string(&player->hand[c]));
         printf("Played: [");
         for (int c = 0; c < NUM_COLORS; c++) 
             printf("%s: %s", color_to_string(c), stack_to_string(&player->played[c])); 
@@ -222,7 +232,7 @@ int replace_player(game_board_t *board, const char *old_name, const char *new_na
 int init_game_board(game_board_t *board) {
     memset(board, 0, sizeof(*board)); 
     board->player_turn = random() % 2; 
-    board->valid_actions = PLAY & DISCARD; 
+    board->valid_actions = PLAY | DISCARD; 
     init_stack(&board->deck, DECK_SIZE); 
     for (int p = 0; p < NUM_PLAYERS; p++) {
         for (int c = 0; c < NUM_COLORS; c++) {
