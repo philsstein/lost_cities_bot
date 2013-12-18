@@ -1,21 +1,10 @@
 #include <string.h>  /* memcpy */ 
 #include <stdio.h>
-#include <libircclient.h>
+
 #include "card_stack.h"
+#include "markup.h"
 
 static const char *color_map[] = { "R", "W", "B", "Y", "G" }; 
-
-static const char* color_to_markup(const color_t c)
-{
-    switch (c) {
-        case RED: return "RED"; break;
-        case WHITE: return "WHITE"; break;
-        case BLUE: return "BLUE"; break;
-        case YELLOW: return "YELLOW"; break;
-        case GREEN: return "GREEN"; break;
-        default: return ""; break;
-    }
-}
 
 const char *color_to_string(const color_t color) {
     return color_map[color]; 
@@ -24,18 +13,11 @@ const char *color_to_string(const color_t color) {
 const char*card_to_markup_string(const card_t *card) {
     static char buffer[32];
     if (card->value != 1)
-        snprintf(buffer, sizeof(buffer), "[COLOR=%s]%s%d[/COLOR]", 
-                color_to_markup(card->color), color_to_string(card->color), card->value); 
+        snprintf(buffer, sizeof(buffer), "%s%d", color_to_string(card->color), card->value); 
     else
-        snprintf(buffer, sizeof(buffer), "[COLOR=%s]%s*[/COLOR]", 
-                color_to_markup(card->color), color_to_string(card->color)); 
+        snprintf(buffer, sizeof(buffer), "%s*", color_to_string(card->color)); 
 
-    /* there is a better way to do this... */
-    char *colored = irc_color_convert_to_mirc(buffer); 
-    snprintf(buffer, sizeof(buffer), "%s", colored); 
-    free(colored);  
-
-    return buffer;
+    return markup(card->color, buffer); 
 }
 
 const card_t *string_to_card(const char *str) {
