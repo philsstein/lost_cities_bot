@@ -10,14 +10,16 @@ const char *color_to_string(const color_t color) {
     return color_map[color]; 
 }
 
-const char*card_to_markup_string(const card_t *card) {
+const char *card_to_markup_string(const card_t *card) {
     static char buffer[32];
-    if (card->value != 1)
+    if (card->value == 0) 
+        snprintf(buffer, sizeof(buffer), "--"); 
+    else if (card->value != 1)
         snprintf(buffer, sizeof(buffer), "%s%d", color_to_string(card->color), card->value); 
     else
         snprintf(buffer, sizeof(buffer), "%s*", color_to_string(card->color)); 
 
-    return markup(card->color, buffer); 
+    return card->value == 0 ? buffer : markup(card->color, buffer); 
 }
 
 const card_t *string_to_card(const char *str) {
