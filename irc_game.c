@@ -110,7 +110,13 @@ static int show_table(game_board_t *board, irc_session_t * session, const char *
     snprintf(buf, sizeof(buf), "Cards remaining in draw deck: %d.", num_cards(&board->deck)); 
     irc_cmd_msg(session, whence, buf); 
 
-    snprintf(buf, sizeof(buf), "It is %s's turn.", board->players[board->player_turn].name); 
+    if (DRAW & board->valid_actions)
+        snprintf(buf, sizeof(buf), "It is %s's turn to draw a card.",
+                board->players[board->player_turn].name); 
+    else
+        snprintf(buf, sizeof(buf), "It is %s's turn to play or discard.",
+                board->players[board->player_turn].name); 
+
     irc_cmd_msg(session, whence, buf); 
 
     return 1; 
