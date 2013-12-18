@@ -142,13 +142,25 @@ int draw_card_test(void) {
     card.color = RED; 
     memcpy(&board.players[1].hand[0], &card, sizeof(card)); 
 
+    /* draw out of turn */
+    assert(!draw_card(&board, p1->name, DECK)); 
+
     assert(discard(&board, p0->name, "B5")); 
-    /* draw from deck */
+    printf("%s\n", board.response); 
+    /* draw incorrectly from empty pile */
+    assert(!draw_card(&board, p0->name, WHITE_PILE)); 
+    /* draw correctly from deck */
     assert(draw_card(&board, p0->name, DECK)); 
+    printf("%s\n", board.response); 
+
+    /* draw out of sequence (before play or discard) */
+    assert(!draw_card(&board, p1->name, DECK)); 
 
     assert(discard(&board, p1->name, "R5")); 
+    printf("%s\n", board.response); 
     /* draw from board, the B5 just discarded */
     assert(draw_card(&board, p1->name, BLUE_PILE)); 
+    printf("%s\n", board.response); 
 
     deinit_game_board(&board); 
     return 0;

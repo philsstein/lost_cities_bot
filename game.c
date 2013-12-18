@@ -176,7 +176,7 @@ int draw_card(game_board_t *board, const char *name, const draw_pile_t pile) {
             if (card) {
                 memcpy(&player->hand[i], card, sizeof(card_t)); 
                 snprintf(board->response, sizeof(board->response), 
-                        "%s drew card %s.", name, card_to_markup_string(card)); 
+                        "You drew card %s.", card_to_markup_string(card)); 
                 board->valid_actions = PLAY | DISCARD; 
                 board->player_turn = board->player_turn ? 0 : 1;
                 return 1;
