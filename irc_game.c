@@ -62,12 +62,14 @@ void event_join(irc_session_t * session, const char * event, const char * origin
     dump_event(session, event, origin, params, count); 
     irc_cmd_user_mode(session, "+i");
     if (origin && session) {
-        /* irc_cmd_user_mode(session, "+o"); */
         char nickbuf[128]; 
         irc_target_get_nick(origin, nickbuf, sizeof(nickbuf));
-        const char *bot_nick = ((game_board_list_t *)irc_get_ctx(session))->bot_nick;
-        if (!strncmp(nickbuf, bot_nick, sizeof(nickbuf))) 
+        game_board_list_t *ctx = (game_board_list_t *)irc_get_ctx(session);
+        const char *bot_nick = ctx->bot_nick;
+        if (!strncmp(nickbuf, bot_nick, sizeof(nickbuf))) {
             irc_cmd_msg(session, params[0], "Let's get this exploring party started!"); 
+            irc_cmd_user_mode(session, "+o");
+        }
     }
 }
 void event_nick(irc_session_t * session, const char * event, const char * origin,
@@ -141,8 +143,12 @@ void event_channel(irc_session_t * session, const char * event, const char * ori
         addlog("Attempting to add %s to game in channel %s.", nick, channel); 
         if (!add_player(game, nick)) 
             addlog("Unable to add % to game.", nick); 
-        else
+        else {
+            char buf[32]; 
+            snprintf(buf, sizeof(buf), "+v %s", nick); 
+            irc_cmd_channel_mode(session, channel, buf); 
             irc_cmd_msg(session, params[0], game->response); 
+        }
 
         if (game->players[0].name[0] && game->players[1].name[0])
             show_table(game, session, params[0]); 
@@ -210,4 +216,19 @@ void event_channel(irc_session_t * session, const char * event, const char * ori
     }
     else
         irc_cmd_msg(session, params[0], "I don't know that command. I'm not a smart bot."); 
+}
+
+void event_numeric (irc_session_t * session, unsigned int event, const char * origin,
+        const char ** params, unsigned int count)
+{
+	if ( event > 400 )
+	{
+		printf ("ERROR %d: %s: %s %s %s %s\n", 
+				event,
+				origin ? origin : "unknown",
+				params[0],
+				count > 1 ? params[1] : "",
+				count > 2 ? params[2] : "",
+				count > 3 ? params[3] : "");
+	}
 }

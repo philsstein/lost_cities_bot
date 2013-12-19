@@ -28,6 +28,7 @@ int main(int argc, char **argv) {
     callbacks.event_channel = event_channel;
     callbacks.event_join = event_join;
     callbacks.event_nick = event_nick;
+    callbacks.event_numeric = event_numeric; 
 
     callbacks.event_quit = dump_event;
     callbacks.event_part = dump_event;
