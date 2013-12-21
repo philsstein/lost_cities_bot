@@ -15,9 +15,8 @@ ${BIN}: main.o ${OBJS}
 test: test.o ${OBJS}
 	${CC} ${CFLAGS} ${INCLUDES} test.o ${OBJS} -o test ${LIBS}
 
-game.o: game.h game.c
-card_stack.o: card_stack.c card_stack.h
-irc_game.o: irc_game.c irc_game.h
+.c.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 tags: main.c test.c ${SRC}
 	ctags -R . ${LIB_IRC_PATH}/include
@@ -26,5 +25,7 @@ clean:
 	@rm -f *.o ${BIN} test debug
 	@rm -rf *.dSYM core*
 
-.c.o:
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+cleanest:
+	@rm -f irc_game.log tags
+	@rm -f *.o ${BIN} test debug
+	@rm -rf *.dSYM core*
