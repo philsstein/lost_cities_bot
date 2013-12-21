@@ -74,7 +74,8 @@ void event_channel(irc_session_t * session, const char * event, const char * ori
 
     int i; 
     for (i = 0; i < num_game_commands; i++) {
-        if (!strncmp(params[1], game_commands[i].cmd, sizeof(game_commands[i].cmd)-1)) {
+        /* if (!strncmp(params[1], game_commands[i].cmd, sizeof(game_commands[i].cmd)-1)) { */
+        if (!strncmp(params[1], game_commands[i].cmd, strlen(game_commands[i].cmd))) {
             if (!game_commands[i].func(session, event, origin, params, count)) {
                 addlog("Error running command %s", params[1]); 
             }

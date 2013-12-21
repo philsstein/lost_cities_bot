@@ -87,9 +87,22 @@ static int handle_help(irc_session_t * session, const char * event, const char *
 {
     char nick[32];
     irc_target_get_nick(origin, nick, sizeof(nick)); 
-    return irc_cmd_msg(session, nick, 
-            "Valid commands: !join !table !play !discard !draw !hand. Each turn muyst be "
-            "play [card] then !draw [color]"); 
+    if (!strncmp(params[1], "!help", sizeof("!help")))
+        return irc_cmd_msg(session, nick, 
+            "Valid commands: !join !table !play !discard !draw !hand. Each turn must be "
+            "play [card] then !draw [color]. !help [cmd] for help on that command."); 
+
+    const char *msg = "I don't have any help on that command."; 
+    const char *cmd = strchr(params[1], ' '); 
+    if (cmd) {
+        for (int i = 0; i < num_game_commands; i++) {
+            if (!strcmp(cmd+1, game_commands[i].cmd+1)) {  /* skip leading ! */
+                msg = game_commands[i].help; 
+                break;
+            }
+        }
+    }
+    return irc_cmd_msg(session, nick, msg); 
 }
 
 /* handle_play and handle_discard should be merged or something. */

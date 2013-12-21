@@ -3,7 +3,7 @@
 
 #include "card_stack.h"
 
-#define MAX_NAME_SIZE 32
+#define MAX_NAME_SIZE 32  /* RFC 2812 says max nick is 9 so this may be overkill. */
 #define NUM_PLAYERS 2
 #define HAND_SIZE 5
 #define NUM_COLORS 5
