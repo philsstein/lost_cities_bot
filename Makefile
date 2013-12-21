@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-Wall -g -std=c99 -D_XOPEN_SOURCE=700
 
 BIN=lost_cities
-OBJS=game.o card_stack.o irc_game.o markup.o
+OBJS=game.o card_stack.o irc_game.o markup.o game_commands.o log.o
 SRC=${OBJS:.o=.c}
 
 LIB_IRC_PATH=../libircclient-1.7
