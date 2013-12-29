@@ -9,6 +9,8 @@ LIB_IRC_PATH=../libircclient-1.7
 INCLUDES=-I /usr/include -I ${LIB_IRC_PATH}/include
 LIBS=${LIB_IRC_PATH}/src/libircclient.a
 
+.PHONY: clean tags cleanest
+
 ${BIN}: main.o ${OBJS}
 	${CC} ${CFLAGS} ${INCLUDES} main.o ${OBJS} -o ${BIN} ${LIBS}
 
