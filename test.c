@@ -5,12 +5,14 @@
 #include <time.h>
 #include "game.h"
 #include "card_stack.h"
+#include "markup.h"
 
 int stack_test(void) {
     /*** stack tests ***/
     const unsigned int card_stack_size = 3;
     card_stack_t card_stack; 
     init_stack(&card_stack, card_stack_size); 
+    set_markup_style(XTERM);  /* test is run on command line. */
 
     card_t c = {.value=3, .color=YELLOW}; 
     push_stack(&card_stack, &c); 
@@ -166,6 +168,16 @@ int draw_card_test(void) {
     return 0;
 }
     
+int markup_test(void) {
+    set_markup_style(NO_MARKUP); 
+    printf("%s\n", markup(RED, "this is red without markup")); 
+    set_markup_style(XTERM); 
+    printf("%s\n", markup(RED, "this is red in xterm")); 
+    set_markup_style(MIRC); 
+    printf("%s\n", markup(RED, "this is red in IRC")); 
+    return 0; 
+}
+
 int main(void) {
     srandom(1); 
    
@@ -177,6 +189,7 @@ int main(void) {
         { .func = add_player_test, .name = "add player test" }, 
         { .func = play_card_test, .name = "play card test" },
         { .func = draw_card_test, .name = "draw card test" },
+        { .func = markup_test, .name = "markup test" },
     }; 
     for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
         printf("=======Running test: %s\n", tests[i].name); 

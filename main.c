@@ -7,6 +7,7 @@
 
 #include "game.h"
 #include "irc_game.h"
+#include "markup.h"
 
 int main(int argc, char **argv) {
     irc_callbacks_t	callbacks;
@@ -15,6 +16,8 @@ int main(int argc, char **argv) {
 
     game_board_list_t first_game; 
     game_board_list_t *ctx = &first_game; 
+
+    set_markup_style(MIRC);   /* use mIRC colors for text output. */
 
     if (argc != 4) {
         printf ("Usage: %s <server> <nick> <channel>\n", argv[0]);
