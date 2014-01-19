@@ -178,6 +178,43 @@ int markup_test(void) {
     return 0; 
 }
 
+int game_over_test(void) 
+{
+    set_markup_style(NO_MARKUP); /* So card_to_markup_string() gives non-marked card str */
+    game_board_t board;
+    init_game_board(&board); 
+    add_player(&board, "Hello"); 
+    add_player(&board, "World"); 
+
+    /* now play a whole game. */
+    int cards_used = NUM_PLAYERS * HAND_SIZE; 
+    while (!is_game_over(&board)) {
+        player_t *p = &board.players[board.player_turn]; 
+        assert(discard(&board, p->name, card_to_markup_string(&p->hand[0]))); 
+        assert(draw_card(&board, p->name, DECK)); 
+        cards_used++; 
+        printf("."); 
+    }
+    /* all cards used in deck and no more */
+    assert(cards_used == DECK_SIZE); 
+    printf("\n"); 
+    assert(get_score(&board)); 
+    printf("%s\n", board.response); 
+
+    set_markup_style(XTERM); 
+    /* deinit followed by init is how the game resets in channel, so test it here. */
+    show_board(&board); 
+    deinit_game_board(&board); 
+    init_game_board(&board); 
+    show_board(&board); 
+    add_player(&board, "Hello"); 
+    add_player(&board, "World"); 
+    show_board(&board); 
+
+    deinit_game_board(&board); 
+    return 0; 
+}
+
 int main(void) {
     srandom(1); 
    
@@ -190,14 +227,18 @@ int main(void) {
         { .func = play_card_test, .name = "play card test" },
         { .func = draw_card_test, .name = "draw card test" },
         { .func = markup_test, .name = "markup test" },
+        { .func = game_over_test, .name = "end of game test" },
     }; 
+    int error = 0; 
     for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
         printf("=======Running test: %s\n", tests[i].name); 
-        if ((*tests[i].func)()) 
+        if ((*tests[i].func)()) {
             fprintf(stderr, "Error in test: %s\n", tests[i].name); 
+            error = 1;
+        }
         else
             printf("OK\n"); 
     }
 
-    return EXIT_SUCCESS; 
+    return error ? EXIT_FAILURE : EXIT_SUCCESS; 
 }

@@ -165,8 +165,21 @@ static int handle_draw(irc_session_t * session, const char * event, const char *
 
     /* This string parsing may be better done inside game.c. */
     int draw_ret = 0; 
-    if (params[1][5] == '\0') 
+    if (params[1][5] == '\0') {
         draw_ret = draw_card(game, nick, DECK); 
+        if (draw_ret && is_game_over(game)) {
+            /* game over man! */
+            irc_cmd_msg(session, nick, game->response); 
+            if (!get_score(game))
+                irc_cmd_msg(session, params[0], "Error getting final score."); 
+            else {
+                irc_cmd_msg(session, params[0], game->response); 
+                deinit_game_board(game); 
+                init_game_board(game); 
+                return 0; 
+            }
+        }
+    }
     else 
         switch (params[1][5]) {
             case 'R':

@@ -193,6 +193,11 @@ int is_game_active(const game_board_t *board)
     return board->players[1].name[0]; 
 }
 
+int is_game_over(const game_board_t *board) 
+{
+    return NULL == top_stack(&board->deck); 
+}
+
 int load_config(const char *conf_file) {
     return 1; 
 }
@@ -215,6 +220,11 @@ void show_board(const game_board_t *board) {
             printf("%s: %s", color_to_string(c), stack_to_string(&player->played[c])); 
         printf("]\n");
     }
+}
+
+int get_score(game_board_t *board) {
+    snprintf(board->response, sizeof(board->response), "There will be a score here."); 
+    return 1; 
 }
 
 int replace_player(game_board_t *board, const char *old_name, const char *new_name)

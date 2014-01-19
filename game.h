@@ -43,6 +43,8 @@ typedef enum { DECK, RED_PILE, WHITE_PILE, BLUE_PILE, YELLOW_PILE, GREEN_PILE } 
 int draw_card(game_board_t *board, const char *name, const draw_pile_t); 
 
 int is_game_active(const game_board_t *board); 
+int is_game_over(const game_board_t *board); 
+int get_score(game_board_t *board); 
 
 /* Can be called anytime. Will only return non-zero if player is in game and is replaced. */
 int replace_player(game_board_t *board, const char *cur_name, const char *new_name); 
